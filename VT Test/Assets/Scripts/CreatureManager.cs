@@ -6,7 +6,7 @@ using System;
 
 namespace WildLife
 {
-    public enum creatureActions { idle, eat, walk, run, fly, attack, defend, hide, evoked, die, getHurt, getLaunched, getCared }
+    public enum creatureActions { idle, eat, walk, run, fly, attack, defend, hide, evoked, die, getHurt, getLaunched, getCared, summoned }
     public enum creatureType { FireBird, IceDog, SilverCat, StoneBear, SpiritSnake, undefined }
     public enum creatureMode { random, playerReact, pathSpecific }
 
@@ -17,6 +17,7 @@ namespace WildLife
         public List<GameObject> activeCreatures;
         public List<GameObject> prefabs;
         public List<Transform> debugArray;
+        public Transform playerLocation;
 
 
         private void Awake()

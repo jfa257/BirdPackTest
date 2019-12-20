@@ -40,6 +40,7 @@ namespace WildLife
             }
         }
 
+
         private IEnumerator WaitForDestination(PathArray path, creatureMode mode)
         {
             yield return new WaitForSeconds(2f);
@@ -67,6 +68,12 @@ namespace WildLife
                 else if (Input.GetKey(KeyCode.D))
                 {
                     ExecuteAction(creatureActions.defend);
+                }
+                else if (Input.GetKey(KeyCode.S) && lastAction != creatureActions.summoned)
+                {
+                    lastAction = creatureActions.summoned;
+                    ExecuteAction(creatureActions.summoned);
+                    Debug.Log("RUNNING SUMMON");
                 }
                 else
                 {
@@ -119,6 +126,7 @@ namespace WildLife
         {
             // StopAllCoroutines();
             nextPathIndex = 0;
+            lastAction = creatureActions.idle;
             if (status == creatureMode.random)
             {
                 GoOnRandomPath(requiredPath);
@@ -126,7 +134,7 @@ namespace WildLife
             else if (status == creatureMode.playerReact)
             {
                 // fire logic for creature, in this case bird's player reaction
-                ExecuteAction(requiredAction);
+                GoOnPlayerReact();
             }
             else if (status == creatureMode.pathSpecific)
             {
@@ -141,11 +149,22 @@ namespace WildLife
             {
                 // activate attack animation state
             }
+            else if (calledAction == creatureActions.summoned)
+            {
+                // activate summoned animation state
+                GoToPlayerLocation();
+            }
             else if (calledAction == creatureActions.die)
             {
                 // activate die animation state
             }
-            //...
+            //.....
+        }
+
+        public void GoToPlayerLocation()
+        {
+            agent.SetDestination(CreatureManager.instance.playerLocation.position);
+            agent.autoBraking = true;
         }
         public void AutoKillCall()
         {

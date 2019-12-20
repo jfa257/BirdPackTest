@@ -7,7 +7,8 @@ using WildLife;
 public class UIManager : MonoBehaviour
 {
     public static UIManager instance { get; private set; }
-
+    public GameObject warningDialog;
+    public static List<string> warningMessages = new List<string> {"Must Create bird first!\n Okay", "you already have one bird!\n Okay"};
     private void Awake()
     {
         if (instance == null)
@@ -22,26 +23,73 @@ public class UIManager : MonoBehaviour
 
     public void SpawnAnimal()
     {
-        CreatureManager.instance.SpawnCreature();
+        if (CreatureManager.instance.activeCreatures.Count == 0)
+        {
+            CreatureManager.instance.SpawnCreature();
+        }
+        else
+        {
+            ShowWarningMsg(1);
+        }
     }
 
     public void GoIntoRandomMode()
     {
-        CreatureManager.instance.ActivateCreatureMode(creatureMode.random, creatureType.FireBird, 0);
+        if (CreatureManager.instance.activeCreatures.Count > 0)
+        {
+            CreatureManager.instance.ActivateCreatureMode(creatureMode.random, creatureType.FireBird, 0);
+        }
+        else
+        {
+            ShowWarningMsg(0);
+        }
     }
 
     public void GoIntoSpecificMode()
     {
-        CreatureManager.instance.ActivateCreatureMode(creatureMode.pathSpecific, creatureType.FireBird, 0);
+        if (CreatureManager.instance.activeCreatures.Count > 0)
+        {
+            CreatureManager.instance.ActivateCreatureMode(creatureMode.pathSpecific, creatureType.FireBird, 0);
+        }
+        else
+        {
+            ShowWarningMsg(0);
+        }
     }
 
     public void GoIntoPlayerReactMode()
     {
-        CreatureManager.instance.ActivateCreatureMode(creatureMode.playerReact, creatureType.FireBird, 0);
+        if (CreatureManager.instance.activeCreatures.Count > 0)
+        {
+            CreatureManager.instance.ActivateCreatureMode(creatureMode.playerReact, creatureType.FireBird, 0);
+        }
+        else
+        {
+            ShowWarningMsg(0);
+        }
     }
 
     public void KillAllBirds()
     {
-        CreatureManager.instance.KillAllCreatures(creatureType.FireBird);
+        if (CreatureManager.instance.activeCreatures.Count > 0)
+        {
+            CreatureManager.instance.KillAllCreatures(creatureType.FireBird);
+        }
+        else
+        {
+            ShowWarningMsg(0);
+        }
     }
+
+    public void ShowWarningMsg(int warningIndex)
+    {
+        warningDialog.GetComponentInChildren<Text>().text = warningMessages[warningIndex];
+        warningDialog.SetActive(true);
+    }
+
+    public void HideWarningMsg ()
+    {
+        warningDialog.SetActive(false);
+    }
+
 }

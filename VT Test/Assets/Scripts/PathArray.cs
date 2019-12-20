@@ -11,5 +11,10 @@ public class PathArray : ScriptableObject
     private void OnEnable()
     {
         targetsOnPath = targetsOnPath ?? new List<Vector3>();
+        if (updatePositionData)
+        {
+
+        }
+
     }
 }
