@@ -6,6 +6,7 @@ using UnityEngine;
 public class PathArray : ScriptableObject
 {
     public List<Vector3> targetsOnPath;
+    public bool updatePositionData = false;
 
     private void OnEnable()
     {
