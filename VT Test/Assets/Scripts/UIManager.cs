@@ -8,7 +8,7 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager instance { get; private set; }
     public GameObject warningDialog;
-    public static List<string> warningMessages = new List<string> {"Must Create bird first!\n Okay", "you already have one bird!\n Okay"};
+    public static List<string> warningMessages = new List<string> {"Must Create bird first!\n Okay", "you already have one bird!\n Okay", " Press S on keyboard to reach player!\nOkay" };
     private void Awake()
     {
         if (instance == null)
@@ -62,6 +62,7 @@ public class UIManager : MonoBehaviour
         if (CreatureManager.instance.activeCreatures.Count > 0)
         {
             CreatureManager.instance.ActivateCreatureMode(creatureMode.playerReact, creatureType.FireBird, 0);
+            ShowWarningMsg(2);
         }
         else
         {
