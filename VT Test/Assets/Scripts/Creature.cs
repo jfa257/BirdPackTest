@@ -27,9 +27,9 @@ namespace WildLife
         public Vector3 startPosForAgent;
         public float baseOffsetValue;
         private Coroutine heightCoroutine;
-        private creatureDirection curDirection;
+        public creatureDirection curDirection;
         private int randomIndexLast = 0;
-        private float localSpeed = 0.02f;
+        private float localSpeed = 0.023f;
 
 
 
@@ -55,29 +55,61 @@ namespace WildLife
 
         public bool WithinHeightBounds()
         {
-            return transform.position.y <= (status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y)
-                && curDirection == creatureDirection.up ||
-                transform.position.y >= (status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y)
-                && curDirection == creatureDirection.down;
+
+            if(status == creatureMode.pathSpecific)
+            {
+                if (curDirection == creatureDirection.down)
+                {
+                    return transform.position.y >= specificPath.targetsOnPath[nextPathIndex].y;
+                }
+                else
+                {
+                    return transform.position.y <= specificPath.targetsOnPath[nextPathIndex].y;
+                }
+            }
+            else if (status == creatureMode.random)
+            {
+                if (curDirection == creatureDirection.down)
+                {
+                    return transform.position.y >= randomPath.targetsOnPath[nextPathIndex].y;
+                }
+                else
+                {
+                    return transform.position.y <= randomPath.targetsOnPath[nextPathIndex].y;
+                }
+            }
+            else 
+            {
+                if (curDirection == creatureDirection.down)
+                {
+                    return transform.position.y >= CreatureManager.instance.playerLocation.position.y;
+                }
+                else
+                {
+                    return transform.position.y <= CreatureManager.instance.playerLocation.position.y;
+                }
+            }
+        }
+
+        public float GetModifierValue ()
+        {
+            return 0;
         }
 
         public IEnumerator UpdateAgentHeight()
         {
             while (!agent.isStopped)
             {
-                if (!NearToTarget() && WithinHeightBounds())
+                if (!NearToTarget() && WithinHeightBounds() || status == creatureMode.playerReact && WithinHeightBounds())
                 {
-                    //if (WithinHeightBounds())
-                    //{
-                        if (curDirection == creatureDirection.up)
-                        {
-                            agent.baseOffset += (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
-                        }
-                        else if (curDirection == creatureDirection.down)
-                        {
-                            agent.baseOffset -= (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
-                        }
-                    //}
+                    if (curDirection == creatureDirection.up)
+                    {
+                        agent.baseOffset += (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
+                    }
+                    else if (curDirection == creatureDirection.down)
+                    {
+                        agent.baseOffset -= (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
+                    }
                 }
                 yield return null;
             }
@@ -104,7 +136,8 @@ namespace WildLife
 
         public creatureDirection UpdateDirection()
         {
-            return Mathf.Round(transform.position.y) > Mathf.Round(status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y) ? creatureDirection.down : creatureDirection.up;
+            return status == creatureMode.playerReact ? Mathf.Round(transform.position.y) > Mathf.Round(CreatureManager.instance.playerLocation.position.y) ? creatureDirection.down : creatureDirection.up :
+                   Mathf.Round(transform.position.y) > Mathf.Round(status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y) ? creatureDirection.down : creatureDirection.up;
         }
 
         public bool NearToTarget()
@@ -205,7 +238,7 @@ namespace WildLife
                 agent.SetDestination(specificPath.targetsOnPath[nextPathIndex]);
                 Debug.Log("GOING TO TARGET NUMBER: " + nextPathIndex + " WITH INDEX: " + nextPathIndex);
                 StartCoroutine(WaitForDestination(specificPath, status));
-                ActivateHeightVariation();
+                //ActivateHeightVariation();
             }
             else
             {
@@ -275,6 +308,7 @@ namespace WildLife
 
         public void GoToPlayerLocation()
         {
+            curDirection = UpdateDirection();
             agent.SetDestination(CreatureManager.instance.playerLocation.position);
             ActivateHeightVariation();
             agent.autoBraking = true;
