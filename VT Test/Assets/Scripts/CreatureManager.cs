@@ -9,6 +9,7 @@ namespace WildLife
     public enum creatureActions { idle, eat, walk, run, fly, attack, defend, hide, evoked, die, getHurt, getLaunched, getCared, summoned }
     public enum creatureType { FireBird, IceDog, SilverCat, StoneBear, SpiritSnake, undefined }
     public enum creatureMode { random, playerReact, pathSpecific }
+    public enum creatureDirection { none, up, down, left, right}
 
     public class CreatureManager : MonoBehaviour
     {

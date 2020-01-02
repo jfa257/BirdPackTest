@@ -42,17 +42,17 @@ NavMeshAgent:
   m_GameObject: {fileID: 5906356467871028398}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.5
+  m_Radius: 1
   m_Speed: 3.5
   m_Acceleration: 8
-  avoidancePriority: 50
+  avoidancePriority: 99
   m_AngularSpeed: 120
-  m_StoppingDistance: 1.95
+  m_StoppingDistance: 2
   m_AutoTraverseOffMeshLink: 0
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 2
-  m_BaseOffset: 5
+  m_Height: 0.5
+  m_BaseOffset: 1
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &4282819435675665162
@@ -80,6 +80,11 @@ MonoBehaviour:
   randomPath: {fileID: 11400000, guid: fb6245d50b4e16d40a670b744dc9c32d, type: 2}
   specificPath: {fileID: 11400000, guid: d216d63aa3aef7c4cbbbc726d2a5cc47, type: 2}
   minDistanceToTarget: 2
+  colliderOnPath: 0
+  indexes: 0000000001000000020000000300000004000000
+  temporalIndexes: 
+  startPosForAgent: {x: 0, y: 0, z: 0}
+  baseOffsetValue: 0
 --- !u!1001 &225680586775076453
 PrefabInstance:
   m_ObjectHideFlags: 0

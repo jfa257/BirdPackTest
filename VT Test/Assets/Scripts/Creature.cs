@@ -1,15 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace WildLife
 {
+
     public abstract class Creature : MonoBehaviour
     {
         public float flySpeed;
         public float walkSpeed;
-        public bool landed = true; // birds will spawn landed by default. Also there will be creatureActions that will be performed or not depending on this value.
+        public bool landed = true;
         public int healthPoints;
         public int nextPathIndex;
         public Animator creatureAnimator;
@@ -19,19 +21,118 @@ namespace WildLife
         public PathArray randomPath;
         public PathArray specificPath;
         public float minDistanceToTarget;
+        public bool colliderOnPath = false;
+        public List<int> indexes = new List<int> { 0, 1, 2, 3, 4 };
+        public List<int> temporalIndexes = new List<int>();
+        public Vector3 startPosForAgent;
+        public float baseOffsetValue;
+        private Coroutine heightCoroutine;
+        private creatureDirection curDirection;
+        private int randomIndexLast = 0;
+        private float localSpeed = 0.02f;
+
+
+
+        private void Start()
+        {
+            baseOffsetValue = agent.baseOffset;
+        }
+
+        public PathArray GetProperPathArray()
+        {
+            switch (status)
+            {
+                case creatureMode.pathSpecific:
+                    return specificPath;
+                case creatureMode.random:
+                    return randomPath;
+                case creatureMode.playerReact:
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        public bool WithinHeightBounds()
+        {
+            return transform.position.y <= (status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y)
+                && curDirection == creatureDirection.up ||
+                transform.position.y >= (status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y)
+                && curDirection == creatureDirection.down;
+        }
+
+        public IEnumerator UpdateAgentHeight()
+        {
+            while (!agent.isStopped)
+            {
+                if (!NearToTarget() && WithinHeightBounds())
+                {
+                    //if (WithinHeightBounds())
+                    //{
+                        if (curDirection == creatureDirection.up)
+                        {
+                            agent.baseOffset += (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
+                        }
+                        else if (curDirection == creatureDirection.down)
+                        {
+                            agent.baseOffset -= (localSpeed / Vector3.Distance(startPosForAgent, agent.destination)) * (1.0f / Time.deltaTime) * Time.fixedDeltaTime;
+                        }
+                    //}
+                }
+                yield return null;
+            }
+        }
+
+
+        public IEnumerator GoToNextTarget(int targetIndex)
+        {
+            while (!colliderOnPath)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, GetProperPathArray().targetsOnPath[targetIndex], 0.1f);
+                yield return null;
+            }
+            yield return null;
+        }
+
+        public IEnumerator SteeringOut()
+        {
+            while (colliderOnPath)
+            {
+                yield return null;
+            }
+        }
+
+        public creatureDirection UpdateDirection()
+        {
+            return Mathf.Round(transform.position.y) > Mathf.Round(status == creatureMode.random ? randomPath.targetsOnPath[nextPathIndex].y : specificPath.targetsOnPath[nextPathIndex].y) ? creatureDirection.down : creatureDirection.up;
+        }
 
         public bool NearToTarget()
         {
             return agent.remainingDistance <= minDistanceToTarget;
         }
 
+
         public void GoOnRandomPath(PathArray randomPath)
         {
+            
             if (status == creatureMode.random)
             {
-                nextPathIndex = Random.Range(0, randomPath.targetsOnPath.Count - 1); // to avoid start always at 0 index location
+                if (randomIndexLast >= randomPath.targetsOnPath.Count || randomIndexLast == 0)
+                {
+                    temporalIndexes = new List<int>();
+                    temporalIndexes = indexes.OrderBy(x => Random.Range(0,randomPath.targetsOnPath.Count-1)).ToList();
+                    randomIndexLast = 0;
+                    Debug.Log("INDEX NOW IS: " + indexes.Count + "index value is: " + temporalIndexes[randomIndexLast]);
+                }
+
+               
+
+                nextPathIndex = temporalIndexes[randomIndexLast];
+               
                 agent.SetDestination(randomPath.targetsOnPath[nextPathIndex]);
-                Debug.Log("GOING TO TARGET NUMBER: " + randomPath.targetsOnPath[nextPathIndex].ToString() + " WITH INDEX: " + nextPathIndex);
+                startPosForAgent = transform.position;
+                randomIndexLast++;
                 StartCoroutine(WaitForDestination(randomPath, status));
             }
             else
@@ -39,12 +140,25 @@ namespace WildLife
                 Debug.Log("CREATURE STOPPED RANDOM MODE");
             }
         }
-
+        
+        public void ActivateHeightVariation()
+        {
+            if (heightCoroutine == null || agent.isStopped)
+            {
+                if (heightCoroutine != null)
+                {
+                    StopCoroutine(heightCoroutine);
+                }
+                heightCoroutine = StartCoroutine(UpdateAgentHeight());
+            }
+        }
 
         private IEnumerator WaitForDestination(PathArray path, creatureMode mode)
         {
+            curDirection = UpdateDirection();
+            ActivateHeightVariation();
             yield return new WaitForSeconds(2f);
-            yield return new WaitUntil(() => agent.remainingDistance <= minDistanceToTarget && agent.remainingDistance > 0);
+            yield return new WaitUntil(() => NearToTarget() && agent.remainingDistance > 0);
             if (mode == creatureMode.random)
             {
                 GoOnRandomPath(path);
@@ -89,8 +203,9 @@ namespace WildLife
             {
                 nextPathIndex = nextPathIndex == specificPath.targetsOnPath.Count ? 0 : nextPathIndex;
                 agent.SetDestination(specificPath.targetsOnPath[nextPathIndex]);
-                Debug.Log("GOING TO TARGET NUMBER: " + specificPath.targetsOnPath[nextPathIndex].ToString() + " WITH INDEX: " + nextPathIndex);
+                Debug.Log("GOING TO TARGET NUMBER: " + nextPathIndex + " WITH INDEX: " + nextPathIndex);
                 StartCoroutine(WaitForDestination(specificPath, status));
+                ActivateHeightVariation();
             }
             else
             {
@@ -124,7 +239,6 @@ namespace WildLife
 
         public void ExecuteCurrentMode(PathArray requiredPath = null, creatureActions requiredAction = creatureActions.idle)
         {
-            // StopAllCoroutines();
             nextPathIndex = 0;
             lastAction = creatureActions.idle;
             if (status == creatureMode.random)
@@ -133,7 +247,6 @@ namespace WildLife
             }
             else if (status == creatureMode.playerReact)
             {
-                // fire logic for creature, in this case bird's player reaction
                 GoOnPlayerReact();
             }
             else if (status == creatureMode.pathSpecific)
@@ -143,8 +256,6 @@ namespace WildLife
         }
         public void ExecuteAction(creatureActions calledAction)
         {
-            // here in this function, we access the animator controller reference and activate or deactivate as needed the booleans, triggers or update float values required to 
-            // go into the desired animation state.
             if (calledAction == creatureActions.attack)
             {
                 // activate attack animation state
@@ -153,6 +264,7 @@ namespace WildLife
             {
                 // activate summoned animation state
                 GoToPlayerLocation();
+                ExecuteAction(creatureActions.idle);
             }
             else if (calledAction == creatureActions.die)
             {
@@ -164,6 +276,7 @@ namespace WildLife
         public void GoToPlayerLocation()
         {
             agent.SetDestination(CreatureManager.instance.playerLocation.position);
+            ActivateHeightVariation();
             agent.autoBraking = true;
         }
         public void AutoKillCall()
